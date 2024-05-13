@@ -18,10 +18,9 @@ ADDR = (SERVER_HOST,SERVER_PORT) # tuple of server ip address and port number
 
 #C:\ML\Real-Time Medical Monitoring System\medical_monitiring_system    
 class MedicalMonitoringGUI:
-    def __init__(self,redis_master):
+    def __init__(self):
         self.root = tk.Tk()
         self.root.title("Medical Data Monitoring System")
-        self.redis_master = redis_master
         self.patient_id = None
         self.heart_rate_pulse = []
 
@@ -30,7 +29,7 @@ class MedicalMonitoringGUI:
         self.create_search_bar()
         self.create_display_area()
 
-        self.update_thread = threading.Thread(target=self.continuously_update_plot)
+        self.update_thread = threading.Thread(target=self.update_gui_with_patient_data)
         self.update_thread.daemon = True
         self.update_thread.start()
 
@@ -56,6 +55,9 @@ class MedicalMonitoringGUI:
         self.patient_id = patient_id
         self.search_entry.delete(0, tk.END)
 
+    def update_pulse(self, heart_rate_pulse):
+        self.heart_rate_pulse.append(heart_rate_pulse)
+        self.update_gui_with_patient_data()
             
     def update_gui_with_patient_data(self):
 
@@ -82,23 +84,21 @@ class MedicalMonitoringGUI:
         self.canvas.draw()
 
 
-    def continuously_update_plot(self, patient_data):
-        self.heart_rate_pulse.append(patient_data)
-
-        if self.patient_id:
-                redis_key = f"patient_{self.patient_id}"
-                patient_data = self.redis_master.get_key_value(redis_key)
-                print("patient data : ", patient_data)
-                if patient_data:
-                    heart_rate_pulse = patient_data[-1]['heart_rate_pulse']  # Get the latest heart rate pulse
-                    self.heart_rate_pulse.append(heart_rate_pulse)
-                    print("heart rate pulse : ", heart_rate_pulse)
-                    self.update_gui_with_patient_data()
-                else:
-                    print("No patient data found")
-        else:
-            print("No patient ID entered")
-        time.sleep(1)  # Adjust the interval as needed
+    # def continuously_update_plot(self, patient_data):
+    #     if self.patient_id:
+    #             redis_key = f"patient_{self.patient_id}"
+    #             patient_data = self.redis_master.get_key_value(redis_key)
+    #             print("patient data : ", patient_data)
+    #             if patient_data:
+    #                 heart_rate_pulse = patient_data[-1]['heart_rate_pulse']  # Get the latest heart rate pulse
+    #                 self.heart_rate_pulse.append(heart_rate_pulse)
+    #                 print("heart rate pulse : ", heart_rate_pulse)
+    #                 self.update_gui_with_patient_data()
+    #             else:
+    #                 print("No patient data found")
+    #     else:
+    #         print("No patient ID entered")
+    #     time.sleep(1)  # Adjust the interval as needed
  
 
     def run(self):

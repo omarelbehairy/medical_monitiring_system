@@ -9,9 +9,10 @@ PORT = 5050
 FORMAT = 'utf-8' # format of the message we will send
 SERVER = socket.gethostbyname(socket.gethostname()) # get server ip address of current machine
 ADDR = (SERVER,PORT) # tuple of server ip address and port number
+import medical_monitor_gui
 
 class Server:
-    def __init__(self):
+    def __init__(self,gui=None):
         self.next_patient_id = 1
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind(ADDR)
@@ -20,6 +21,8 @@ class Server:
         # Create a Redis client
         self.redis_master = RedisMaster()
         self.redis_master.connect()
+
+        self.gui = gui
 
        # self.gui = MedicalMonitoringGUI(redis_master=self.redis_master)
 
@@ -53,6 +56,10 @@ class Server:
             print(json.dumps(vital_signs))  
             print(f"Data stored in Redis: patient_{ patient_id } - {vital_signs}")   
 
+            if self.gui:
+                    print("Updating GUI")
+                    self.gui.update_pulse( vital_signs['heart_rate_pulse'])
+
 
             # self.gui.continuously_update_plot(existing_data)
 
@@ -61,7 +68,6 @@ class Server:
 
     def run_server(self):
         try:
-            #self.gui.run()
             while True:
                 client_socket, client_address = self.server_socket.accept()
                 print(f"New connection from {client_address}")
@@ -81,5 +87,8 @@ class Server:
             self.redis_master.disconnect() 
 
 if __name__ == "__main__":
-    server = Server()
-    server.run_server()
+    gui = medical_monitor_gui.MedicalMonitoringGUI()
+    server=Server(gui)
+    server_thread = threading.Thread(target=server.run_server)
+    server_thread.start()
+    gui.run()

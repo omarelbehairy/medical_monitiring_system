@@ -7,7 +7,7 @@ import threading
 import socket
 import random
 import time
-
+import medical_monitor_gui 
 SERVER_PORT = 5050
 FORMAT = 'utf-8' # format of the message we will send
 #SERVER_HOST = "192.168.1.8" # get server ip address of current machine
@@ -18,7 +18,6 @@ class Client:
     def __init__(self):
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.connect(ADDR) # connect to the server
-
 
 
     def generate_vital_signs(self):
@@ -55,11 +54,14 @@ class Client:
                 self.send_vital_signs(heart_rate_pulse)
                 print(f"Heart rate pulse: {heart_rate_pulse}bpm")
 
-                if self.gui:
-                    self.gui.update_gui_with_patient_data(heart_rate_pulse)
+                
 
                 time.sleep(random.uniform(1, 2))
 
         except KeyboardInterrupt:
             print("Client shutting down...")
             self.close()
+
+if __name__ == "__main__":
+    client = Client()
+    client.run()
