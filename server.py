@@ -43,22 +43,19 @@ class Server:
                 break
             vital_signs = data_decoded
             redis_key = f"patient_{patient_id}"
-            # Retrieve existing data from Redis
-            # existing_data = self.redis_master.get_key_value(redis_key)
-            # if existing_data:
-            #     existing_data = json.loads(existing_data)
-            #     existing_data.append(vital_signs)
-            #     print(f"Existing data: {existing_data}")
-            # else:
-            #     existing_data = [vital_signs]
 
             self.redis_master.set_key_value(redis_key, json.dumps(vital_signs))
             print(json.dumps(vital_signs))  
             print(f"Data stored in Redis: patient_{ patient_id } - {vital_signs}")   
 
             if self.gui:
-                    print("Updating GUI")
-                    self.gui.update_pulse( vital_signs['heart_rate_pulse'])
+                    print('checking key:',self.redis_master.get_key_value(redis_key))
+                    heart_rate = self.redis_master.get_key_value(redis_key)[0]['heart_rate_pulse']
+                    print(f"Received Heart rate: {heart_rate}bpm")
+                    print("Updating heart rate pulse for patient id: ", patient_id)
+                    print(vital_signs['heart_rate_pulse'])
+                    print(heart_rate)
+                    self.gui.update_pulse( heart_rate, patient_id)
 
 
             # self.gui.continuously_update_plot(existing_data)
@@ -78,7 +75,7 @@ class Server:
                 #start a new thread to handle the client
                 client_thread = threading.Thread(target=self.handle_client, args=(client_socket,patient_id))
                 client_thread.start()
-                print(f"Patient connections: {threading.active_count() - 1}")
+                print(f"Patient connections: {threading.active_count() - 2}")
 
         except KeyboardInterrupt:
             print("Server shutting down...")

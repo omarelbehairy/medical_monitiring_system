@@ -22,16 +22,20 @@ class MedicalMonitoringGUI:
         self.root = tk.Tk()
         self.root.title("Medical Data Monitoring System")
         self.patient_id = None
-        self.heart_rate_pulse = []
+        self.patient_data = {}
+
+        self.high_threshold = 115
+        self.low_threshold = 35
+
 
  
 
         self.create_search_bar()
         self.create_display_area()
 
-        self.update_thread = threading.Thread(target=self.update_gui_with_patient_data)
-        self.update_thread.daemon = True
-        self.update_thread.start()
+        # self.update_thread = threading.Thread(target=self.update_gui_with_patient_data)
+        # self.update_thread.daemon = True
+        # self.update_thread.start()
 
     def create_search_bar(self):
         self.search_bar = ttk.Label(self.root, text="Enter Patient ID:")
@@ -49,57 +53,71 @@ class MedicalMonitoringGUI:
         self.canvas.get_tk_widget().grid(row=1, column=0, columnspan=3, padx=10, pady=10)
 
     def search_patient(self):
-        patient_id = self.search_entry.get()
+        patient_id = int(self.search_entry.get())
         redis_key = f"patient_{patient_id}"
         print ("searching for patient data with key : ", redis_key)
         self.patient_id = patient_id
+       
+        self.clear_plot()
         self.search_entry.delete(0, tk.END)
 
-    def update_pulse(self, heart_rate_pulse):
-        self.heart_rate_pulse.append(heart_rate_pulse)
-        self.update_gui_with_patient_data()
+    def update_pulse(self, heart_rate_pulse, patient_id):
+          if self.patient_id is not None:
+            # Add heart rate pulse to patient data in dictionary
+            print("Updating patient data for patient id: ", self.patient_id)
+            if patient_id not in self.patient_data:
+               self.patient_data[patient_id] = []  # Initialize empty list for patient data
+            
+            self.patient_data[patient_id].append(heart_rate_pulse)
+            print(self.patient_data)
+            print("self : ", self.patient_id)  
+            print("patient id not self : ", patient_id)
+            if int(patient_id) == int(self.patient_id):
+                print("ehhhhhhhhhhhhhh b2aa")
+                self.update_gui_with_patient_data()
+          else:
+            print("Please enter a valid patient ID")
+            
             
     def update_gui_with_patient_data(self):
-
         self.ax.clear()
+        patient_pulse = self.patient_data[int(self.patient_id)]
+        latest_heart_rate = patient_pulse[-1] if patient_pulse else None
+
+        print("patient pulse : ", patient_pulse)
+
+        exceeded_high_threshold = latest_heart_rate and latest_heart_rate > self.high_threshold
+        exceeded_low_threshold = latest_heart_rate and latest_heart_rate < self.low_threshold
+
+        if patient_pulse:
+            if exceeded_high_threshold:
+                self.ax.text(0.5, 0.9, 'High Heart Rate', horizontalalignment='center', verticalalignment='center', transform=self.ax.transAxes, color='red', fontsize=12)
+            elif exceeded_low_threshold:
+                self.ax.text(0.5, 0.9, 'Low Heart Rate', horizontalalignment='center', verticalalignment='center', transform=self.ax.transAxes, color='red', fontsize=12)
+            else:
+            # If heart rate pulse is within normal range, clear any existing warning messages
+                self.ax.text(0.5, 0.9, '', horizontalalignment='center', verticalalignment='center', transform=self.ax.transAxes, fontsize=12)    
+
         
-        # Extract vital signs data
-        print(self.heart_rate_pulse)
-
-
         # Plot vital signs with time values
-        self.ax.plot(self.heart_rate_pulse, color='b', linestyle='-')
-        self.ax.set_xlabel('Time')
-        self.ax.set_ylabel('Heart Rate Pulse')
-        self.ax.set_title('Heart Rate Pulse Over Time')
+            self.ax.plot(patient_pulse, color='b', linestyle='-')
+            self.ax.set_xlabel('Time')
+            self.ax.set_ylabel(f"Heart Rate Pulse of Patient({self.patient_id})")
+            self.ax.set_title('Heart Rate Pulse Over Time')
 
-        # Adjust y-axis limits based on the range of heart rate values
-        if self.heart_rate_pulse:
-            min_heart_rate = min(self.heart_rate_pulse)
-            max_heart_rate = max(self.heart_rate_pulse)
+            # Adjust y-axis limits based on the range of heart rate values
+            min_heart_rate = min(patient_pulse)
+            max_heart_rate = max(patient_pulse)
             margin = 10  # Add a small margin
             self.ax.set_ylim([min_heart_rate - margin, max_heart_rate + margin])
 
 
         self.canvas.draw()
-
-
-    # def continuously_update_plot(self, patient_data):
-    #     if self.patient_id:
-    #             redis_key = f"patient_{self.patient_id}"
-    #             patient_data = self.redis_master.get_key_value(redis_key)
-    #             print("patient data : ", patient_data)
-    #             if patient_data:
-    #                 heart_rate_pulse = patient_data[-1]['heart_rate_pulse']  # Get the latest heart rate pulse
-    #                 self.heart_rate_pulse.append(heart_rate_pulse)
-    #                 print("heart rate pulse : ", heart_rate_pulse)
-    #                 self.update_gui_with_patient_data()
-    #             else:
-    #                 print("No patient data found")
-    #     else:
-    #         print("No patient ID entered")
-    #     time.sleep(1)  # Adjust the interval as needed
  
+    def clear_plot(self):
+        self.patient_data = {}
+        self.ax.clear()
+        self.canvas.draw()
 
     def run(self):
         self.root.mainloop()
