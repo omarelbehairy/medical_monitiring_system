@@ -18,5 +18,5 @@ This project implements a real-time medical monitoring system using Python, Redi
 
 1. Clone the repository:
    ```sh
-   git clone https://github.com/yourusername/medical-monitoring-system.git
-   cd medical-monitoring-system
+   git clone https://github.com/omarelbehairy/medical_monitiring_system.git
+   cd medical_monitiring_system
